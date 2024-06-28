@@ -1,6 +1,7 @@
-package server
+package dev.clevernovel.tlv.encoder.server
 
-import dto.CryptoResponse
+import dev.clevernovel.tlv.encoder.dto.CryptoResponse
+import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
@@ -11,8 +12,8 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
-import utils.CryptoUtils
-import utils.TLVUtils
+import dev.clevernovel.tlv.encoder.utils.CryptoUtils
+import dev.clevernovel.tlv.encoder.utils.TLVUtils
 
 fun main() {
 
@@ -23,8 +24,8 @@ fun main() {
             json(Json { prettyPrint = true })
         }
         routing {
-            try {
-                post("/process") {
+            post("/process") {
+                try {
                     val encodedRequest: ByteArray = call.receive()
                     log.info("Request received...")
                     val request = TLVUtils.decodeCryptoRequest(encodedRequest)
@@ -36,9 +37,10 @@ fun main() {
 
                     call.respond(encodedResponse)
                     log.info("Response sent...")
+                } catch (e: Exception) {
+                    log.error("Error processing request", e)
+                    call.respond(HttpStatusCode.BadRequest, "Invalid request data")
                 }
-            } catch (e: Exception) {
-                log.error("Error processing request", e)
             }
         }
     }.start(wait = true)

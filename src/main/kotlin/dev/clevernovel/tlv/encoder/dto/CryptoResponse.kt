@@ -1,4 +1,4 @@
-package dto
+package dev.clevernovel.tlv.encoder.dto
 
 import kotlinx.serialization.Serializable
 

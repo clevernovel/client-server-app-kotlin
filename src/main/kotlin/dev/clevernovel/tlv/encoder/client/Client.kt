@@ -1,6 +1,6 @@
-package client
+package dev.clevernovel.tlv.encoder.client
 
-import dto.CryptoRequest
+import dev.clevernovel.tlv.encoder.dto.CryptoRequest
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
@@ -11,7 +11,7 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
-import utils.TLVUtils
+import dev.clevernovel.tlv.encoder.utils.TLVUtils
 import java.io.File
 import java.util.*
 
@@ -24,7 +24,12 @@ suspend fun main(args: Array<String>) {
     val filePath = scanner.nextLine()
 
     val inputData: ByteArray = if (filePath.isNotEmpty()) {
-        File(filePath).readBytes()
+        try {
+            File(filePath).readBytes()
+        } catch (e: Exception) {
+            log.error("Ошибка при чтении файла: ${e.message}")
+            return
+        }
     } else {
         println("Введите данные для шифрования/дешифрования:")
         scanner.nextLine().toByteArray()
@@ -51,8 +56,9 @@ suspend fun main(args: Array<String>) {
         }
     }
 
-    val request = CryptoRequest(inputData, inputKey, inputIv, inputAlgorithm, inputEncrypting)
-    val encodedRequest = TLVUtils.encodeCryptoRequest(request)
+    try {
+        val request = CryptoRequest(inputData, inputKey, inputIv, inputAlgorithm, inputEncrypting)
+        val encodedRequest = TLVUtils.encodeCryptoRequest(request)
 
     val response: HttpResponse = client.post("http://localhost:8080/process") {
         contentType(ContentType.Application.Json)
@@ -64,12 +70,20 @@ suspend fun main(args: Array<String>) {
         val cryptoResponse = TLVUtils.decodeCryptoResponse(encodedCryptoResponse)
 
         if (outputFilePath.isNotEmpty()) {
-            File(outputFilePath).writeBytes(cryptoResponse.result)
+            try {
+                File(outputFilePath).writeBytes(cryptoResponse.result)
+            } catch (e: Exception) {
+                log.error("Ошибка при записи в файл: ${e.message}")
+            }
         }
         log.info("Результат: ${String(cryptoResponse.result)}")
     } else {
         log.error("Ошибка: ${response.status}")
     }
 
-    client.close()
+    } catch (e: Exception) {
+        log.error("Произошла ошибка: ${e.message}")
+    } finally {
+        client.close()
+    }
 }
